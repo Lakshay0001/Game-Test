@@ -1,80 +1,58 @@
-const gameContainer = document.getElementById("game-container");
-const player = document.getElementById("player");
-const scoreDisplay = document.getElementById("score");
-const gameOverText = document.getElementById("game-over");
-
-let score = 0;
+let board = ['', '', '', '', '', '', '', '', ''];
+let currentPlayer = 'X';
 let gameOver = false;
-let playerPositionX = gameContainer.offsetWidth / 2 - player.offsetWidth / 2;
-const playerSpeed = 10;
 
-function updatePlayerPosition() {
-    player.style.left = `${playerPositionX}px`;
+const cells = document.querySelectorAll('.cell');
+const statusText = document.getElementById('status');
+
+cells.forEach(cell => {
+    cell.addEventListener('click', handleCellClick);
+});
+
+function handleCellClick(event) {
+    const index = event.target.dataset.index;
+
+    if (board[index] || gameOver) return;
+
+    board[index] = currentPlayer;
+    event.target.textContent = currentPlayer;
+
+    if (checkWinner()) {
+        statusText.textContent = `${currentPlayer} Wins!`;
+        gameOver = true;
+    } else if (board.every(cell => cell)) {
+        statusText.textContent = "It's a Draw!";
+        gameOver = true;
+    } else {
+        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+    }
 }
 
-function movePlayer(event) {
-    if (gameOver) return;
-    if (event.key === "ArrowLeft" && playerPositionX > 0) {
-        playerPositionX -= playerSpeed;
-    }
-    if (event.key === "ArrowRight" && playerPositionX < gameContainer.offsetWidth - player.offsetWidth) {
-        playerPositionX += playerSpeed;
-    }
-    updatePlayerPosition();
+function checkWinner() {
+    const winningCombinations = [
+        [0, 1, 2],
+        [3, 4, 5],
+        [6, 7, 8],
+        [0, 3, 6],
+        [1, 4, 7],
+        [2, 5, 8],
+        [0, 4, 8],
+        [2, 4, 6]
+    ];
+
+    return winningCombinations.some(combination => {
+        const [a, b, c] = combination;
+        return board[a] && board[a] === board[b] && board[a] === board[c];
+    });
 }
 
-document.addEventListener("keydown", movePlayer);
-
-function generateFallingObject() {
-    const object = document.createElement("div");
-    object.classList.add("falling-object");
-    object.style.left = `${Math.random() * (gameContainer.offsetWidth - 30)}px`;
-    gameContainer.appendChild(object);
-
-    let objectPositionY = 0;
-    const objectSpeed = Math.random() * 2 + 2; // Random speed for variation
-    const objectWidth = 30;
-    
-    function moveFallingObject() {
-        if (gameOver) return;
-
-        objectPositionY += objectSpeed;
-        object.style.top = `${objectPositionY}px`;
-
-        // Check collision with the player
-        const objectRect = object.getBoundingClientRect();
-        const playerRect = player.getBoundingClientRect();
-
-        if (
-            objectRect.bottom >= playerRect.top &&
-            objectRect.left < playerRect.right &&
-            objectRect.right > playerRect.left
-        ) {
-            score++;
-            scoreDisplay.textContent = `Score: ${score}`;
-            object.remove(); // Remove the object when caught
-        }
-
-        // If the object falls out of the container
-        if (objectPositionY > gameContainer.offsetHeight) {
-            gameOver = true;
-            gameOverText.style.display = "block";
-        } else {
-            requestAnimationFrame(moveFallingObject);
-        }
-    }
-
-    moveFallingObject();
-}
-
-function startGame() {
-    score = 0;
+function restartGame() {
+    board = ['', '', '', '', '', '', '', '', ''];
+    currentPlayer = 'X';
     gameOver = false;
-    scoreDisplay.textContent = `Score: ${score}`;
-    gameOverText.style.display = "none";
+    statusText.textContent = '';
 
-    // Generate new falling object every second
-    setInterval(generateFallingObject, 1000);
+    cells.forEach(cell => {
+        cell.textContent = '';
+    });
 }
-
-startGame();
